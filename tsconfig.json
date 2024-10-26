@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "lib": ["dom", "es2021"],
     "strict": true,
     "target": "ES6",
     "module": "ESNext",
