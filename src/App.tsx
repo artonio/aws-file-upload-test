@@ -24,7 +24,7 @@ const App: Component = () => {
       let percentage: any = 0;
 
       const videoUploaderOptions = {
-        fileName: "foo",
+        fileName: file()?.name || 'foo.mp4',
         file: file()!,
       }
       const awsUploader = new Uploader(videoUploaderOptions);
