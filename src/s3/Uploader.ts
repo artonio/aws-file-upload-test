@@ -1,11 +1,11 @@
 import axios from "axios"
 
-interface UploaderOptions {
+export interface UploaderOptions {
     chunkSize?: number;
     threadsQuantity?: number;
     file: File;
     fileName: string;
-    sessionToken?: string;
+    sessionToken: string;
 }
 
 // initializing axios
@@ -27,13 +27,13 @@ export class Uploader {
     private uploadedParts: any[];
     private fileId: string | null;
     private fileKey: string | null;
-    private sessionToken: string | null;
+    private sessionToken: string;
     private onProgressFn: (arg?: any) => void;
     private onErrorFn: (error?: any) => void;
 
     constructor(options: UploaderOptions) {
 
-        this.sessionToken = options.sessionToken || null;
+        this.sessionToken = options.sessionToken;
 
         // this must be bigger than or equal to 5MB,
         // otherwise AWS will respond with:
@@ -116,6 +116,9 @@ export class Uploader {
                 url: "/uploads/initializeMultipartUpload",
                 method: "POST",
                 data: videoInitializationUploadInput,
+                headers: {
+                    "parse-session-token": this.sessionToken,
+                }
             })
 
             // Step 3: Retrieve the file ID and file key from the server response
@@ -136,6 +139,9 @@ export class Uploader {
                 url: "/uploads/getMultipartPreSignedUrls",
                 method: "POST",
                 data: AWSMultipartFileDataInput,
+                headers: {
+                    "parse-session-token": this.sessionToken
+                }
             })
 
             // Step 6: Store the pre-signed URLs and initiate the upload process
@@ -368,7 +374,8 @@ export class Uploader {
                     url: `/uploads/proxy-upload-part?partNumber=${part.PartNumber}&uploadId=${this.fileId}&fileKey=${this.fileKey}`,
                     data: formData,
                     headers: {
-                        'Content-Type': 'multipart/form-data'
+                        'Content-Type': 'multipart/form-data',
+                        "parse-session-token": this.sessionToken
                     },
                     onUploadProgress: (progressEvent) => {
                         this.handleProgress(part.PartNumber - 1, {

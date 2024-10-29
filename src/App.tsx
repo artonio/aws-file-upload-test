@@ -1,7 +1,7 @@
 import { Component, createEffect, createSignal } from 'solid-js';
 import axios from 'axios';
 import Parse from 'parse';
-import { Uploader } from './s3/Uploader';
+import { Uploader, UploaderOptions } from './s3/Uploader';
 
 import { parse } from '.';
 
@@ -23,9 +23,11 @@ const App: Component = () => {
     if (file()) {
       let percentage: any = 0;
 
-      const videoUploaderOptions = {
+      const videoUploaderOptions: UploaderOptions = {
         fileName: file()?.name || 'foo.mp4',
         file: file()!,
+        sessionToken: 'r:123',
+      
       }
       const awsUploader = new Uploader(videoUploaderOptions);
       setUploader(awsUploader);

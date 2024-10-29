@@ -8,7 +8,10 @@ const api = axios.create({
 
 export class Uploader {
   constructor(options) {
-    this.sessionToken = options.sessionToken || null
+    if (!options.sessionToken) {
+        throw new Error("Session token is required")
+    }
+    this.sessionToken = options.sessionToken;
 
     // this must be bigger than or equal to 5MB,
     // otherwise AWS will respond with:
@@ -90,7 +93,10 @@ export class Uploader {
       const initializeReponse = await api.request({
         url: "/uploads/initializeMultipartUpload",
         method: "POST",
-        data: videoInitializationUploadInput
+        data: videoInitializationUploadInput,
+        headers: {
+            "parse-session-token": this.sessionToken
+        }
       })
 
       // Step 3: Retrieve the file ID and file key from the server response
@@ -110,7 +116,10 @@ export class Uploader {
       const urlsResponse = await api.request({
         url: "/uploads/getMultipartPreSignedUrls",
         method: "POST",
-        data: AWSMultipartFileDataInput
+        data: AWSMultipartFileDataInput,
+        headers: {
+            "parse-session-token": this.sessionToken
+        }
       })
 
       // Step 6: Store the pre-signed URLs and initiate the upload process
@@ -347,7 +356,8 @@ export class Uploader {
           url: `/uploads/proxy-upload-part?partNumber=${part.PartNumber}&uploadId=${this.fileId}&fileKey=${this.fileKey}`,
           data: formData,
           headers: {
-            "Content-Type": "multipart/form-data"
+            "Content-Type": "multipart/form-data",
+            "parse-session-token": this.sessionToken
           },
           onUploadProgress: progressEvent => {
             this.handleProgress(part.PartNumber - 1, {
