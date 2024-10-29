@@ -5,11 +5,13 @@ interface UploaderOptions {
     threadsQuantity?: number;
     file: File;
     fileName: string;
+    sessionToken?: string;
 }
 
 // initializing axios
 const api = axios.create({
-    baseURL: "http://localhost:1337",
+    // baseURL: "http://localhost:1337",
+    baseURL: "https://zoomy.b4a.io",
 })
 
 export class Uploader {
@@ -25,10 +27,14 @@ export class Uploader {
     private uploadedParts: any[];
     private fileId: string | null;
     private fileKey: string | null;
+    private sessionToken: string | null;
     private onProgressFn: (arg?: any) => void;
     private onErrorFn: (error?: any) => void;
 
     constructor(options: UploaderOptions) {
+
+        this.sessionToken = options.sessionToken || null;
+
         // this must be bigger than or equal to 5MB,
         // otherwise AWS will respond with:
         // "Your proposed upload is smaller than the minimum allowed size"
@@ -257,6 +263,9 @@ export class Uploader {
                     url: "/uploads/finalizeMultipartUpload",
                     method: "POST",
                     data: videoFinalizationMultiPartInput,
+                    headers: {
+                        "parse-session-token": this.sessionToken,
+                    },
                 });
             } catch (error) {
                 console.error("Failed to finalize multipart upload:", error);
@@ -354,23 +363,21 @@ export class Uploader {
                 const formData = new FormData();
                 formData.append('chunk', file);
 
-                // Create axios request
-                const xhr = axios.post(
-                    `http://localhost:1337/proxy-upload-part?partNumber=${part.PartNumber}&uploadId=${this.fileId}&fileKey=${this.fileKey}`,
-                    formData,
-                    {
-                        headers: {
-                            'Content-Type': 'multipart/form-data'
-                        },
-                        onUploadProgress: (progressEvent) => {
-                            this.handleProgress(part.PartNumber - 1, {
-                                type: 'progress',
-                                loaded: progressEvent.loaded,
-                                total: progressEvent.total || 0
-                            } as any);
-                        }
+                const xhr = api.request({
+                    method: 'POST',
+                    url: `/uploads/proxy-upload-part?partNumber=${part.PartNumber}&uploadId=${this.fileId}&fileKey=${this.fileKey}`,
+                    data: formData,
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    onUploadProgress: (progressEvent) => {
+                        this.handleProgress(part.PartNumber - 1, {
+                            type: 'progress',
+                            loaded: progressEvent.loaded,
+                            total: progressEvent.total || 0
+                        } as any);
                     }
-                );
+                });
 
                 // Store the cancel token
                 this.activeConnections[part.PartNumber - 1] = xhr;
